@@ -1,0 +1,2 @@
+git clone https://henkku:accesstoken@github.com/henkku/babelwriter_nodejs
+https://henkku:accesstoken@github.com/henkku/babelreader

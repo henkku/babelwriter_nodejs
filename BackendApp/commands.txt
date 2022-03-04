@@ -1,0 +1,13 @@
+node src\server.js    -- käynnistää express js sovelluksen hakemistossa c:\workspace\BabelWriter\BackendApp
+- Toimii tällä hetkellä pelkästään Node.js: omassa command promptissa (Windows/All apps/Node.js)
+ng serve -- käynnistää Angular sovelluksen live reload -moodissa, hakemistossa UIApp/src/appn
+
+poistettu pathista polku: C:\Program Files\Java\GraalVM\jre\languages\js\bin
+poistettu pathista polku: C:\Progra~1\Java\GraalVM\bin
+
+Korjattu ongelma, jossa node ei löydä sqlite3 modulea, seuraavilla komennoilla:
+npm install --ignore scripts
+cd ./node_modules/sqlite3 && npm install --build-from-source
+-- ohjeet löytyivät täältä: https://github.com/mapbox/node-sqlite3/issues/1434
+
+pkg . (paketoi .exe tiedostoksi)

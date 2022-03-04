@@ -1,0 +1,3 @@
+npm run package-win (paketoi softan .exe, vaatii että viimeisimmille koodeille ajettu build)
+npm run build . (ajaa buildin node sovellukselle, ajettava ennen .exe paketointia)
+npm run electron-start (käynnistää sovelluksen electron-sovelluksena, ilman exe-paketointia)
