@@ -4,6 +4,7 @@ import babelicon from  '../assets/babelicon.png';
 //import { Nav } from 'react-bootstrap';
 import Navbar from 'react-bootstrap/Navbar';
 import Nav from 'react-bootstrap/Nav';
+import { Link } from 'react-router-dom';
 
 class NavBar extends Component {
 
@@ -16,7 +17,10 @@ class NavBar extends Component {
                         <div className="navbar-brand navmargins">
                             <img src={babelicon} alt="Logo" style={{ width: 40 }} />
                         </div>
-                        <h1 className="droidgrey">Babelwriter</h1>
+                        <Link to={`/`}>
+                            <h1 className="droidgrey">Babelwriter</h1>
+                        </Link>
+
                     </ul>
                 </Nav>
             </Navbar>

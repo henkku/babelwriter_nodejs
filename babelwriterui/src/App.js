@@ -5,7 +5,9 @@ import NavBar from './components/NavBar';
 //import { Route, Switch } from 'react-router-dom';
 import { Route } from 'react-router-dom';
 import SentenceView from  './components/SentenceView';
+import HomeView from './components/HomeView';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import { Switch } from 'react-router-dom/cjs/react-router-dom.min';
 //import Error from  './components/Error';
 
 
@@ -23,7 +25,10 @@ class App extends Component {
             crossorigin="anonymous" />
         </Helmet>
         <NavBar />
-        <Route path="/" exact render={props => <SentenceView />} />
+        <Switch>
+        <Route path="/" exact render={props => <HomeView />} ></Route>
+        <Route path="/course_editor" exact render={props => <SentenceView />} />
+        </Switch>
 
       </div>
     )

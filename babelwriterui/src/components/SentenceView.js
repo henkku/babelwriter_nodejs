@@ -313,6 +313,9 @@ class SentenceView extends Component {
             this.state.audioFile.play()
         }
     }
+    handleExitButton(){
+        console.log("entering handleExitButton")        
+    }
     getCurrentSentence(){
         console.log("entering getCurrentSentence with id: "+this.state.currentSentence)
         axios.get('http://localhost:3001/words/'+this.state.currentSentence
@@ -371,35 +374,29 @@ class SentenceView extends Component {
             <div className="chapternavigatorcolor">
                 
                 <div>
-                    <div>
-                        <div>
-                            <div className="row bigbottommargin">
-                                <h2>Chapters</h2>
-                                <button type="button" onClick={() => this.handleOnSentenceChange('firstSentence')} className="btn btn-primary topbottommargins bigmarginleft"><img src={ beginning } alt="" /></button>
-                                <button type="button" onClick={() => this.handleOnSentenceChange('previousSentence')} className="btn btn-primary topbottommargins sidemargins"><img src={ arrow_left } alt="" /></button>
-                                <input type="text" value={(this.state.sentencePointer+1)+" / "+this.state.sentences.length} readOnly className="topbottommargins sidemargins counter" id="sentenceID" />
-                                <button type="button" onClick={() => this.handleOnSentenceChange('nextSentence')} className="btn btn-primary topbottommargins sidemargins"><img src={ arrow_right } alt="" /></button>
-                                <button type="button" onClick={() => this.handleOnSentenceChange('lastSentence')} className="btn btn-primary topbottommargins sidemargins"><img src={ end } alt="" /></button>
-                                <Button type="button" onClick={() => this.handleNewSentenceButton()}  variant="dark" className="btn btn-primary topbottommargins sidemargins">New Chapter</Button>
-                            </div>
+                    <div className="row bigbottommargin">
+                        <h2>Chapter</h2>
+                        <div className="centeralignbox">
+                            <button type="button" onClick={() => this.handleOnSentenceChange('previousSentence')} className="btn btn-primary topbottommargins bigmarginleft"><img src={ arrow_left } alt="" /></button>
+                            <input type="text" value={(this.state.sentencePointer+1)+" / "+this.state.sentences.length} readOnly className="topbottommargins sidemargins counter" id="sentenceID" />
+                            <button type="button" onClick={() => this.handleOnSentenceChange('nextSentence')} className="btn btn-primary topbottommargins sidemargins"><img src={ arrow_right } alt="" /></button>
                         </div>
+                        <Button type="button" onClick={() => this.handleNewSentenceButton()}  variant="dark" className="btn btn-primary topbottommargins bigmarginleft">New Chapter</Button>
                     </div>
                 </div>
             </div>
             <div className="sentencenavigatorcolor">
                 <div>
-                    <div>
-                        <div>
-                            <div className="row">
-                                <h2>Sentences</h2>
-                                <button type="button" onClick={() => this.handleOnSentenceChange('firstSentence')} className="btn btn-primary topbottommargins bigmarginleft"><img src={ beginning } alt="" /></button>
-                                <button type="button" onClick={() => this.handleOnSentenceChange('previousSentence')} className="btn btn-primary topbottommargins sidemargins"><img src={ arrow_left } alt="" /></button>
-                                <input type="text" value={(this.state.sentencePointer+1)+" / "+this.state.sentences.length} readOnly className="topbottommargins sidemargins counter" id="sentenceID" />
-                                <button type="button" onClick={() => this.handleOnSentenceChange('nextSentence')} className="btn btn-primary topbottommargins sidemargins"><img src={ arrow_right } alt="" /></button>
-                                <button type="button" onClick={() => this.handleOnSentenceChange('lastSentence')} className="btn btn-primary topbottommargins sidemargins"><img src={ end } alt="" /></button>
-                                <Button type="button" onClick={() => this.handleNewSentenceButton()}  variant="dark" className="btn btn-primary topbottommargins sidemargins">Add Sentence</Button>
-                            </div>
+                    <div className="row">
+                        <h2>Sentence</h2>
+                        <div className="centeralignbox">
+                            <button type="button" onClick={() => this.handleOnSentenceChange('firstSentence')} className="btn btn-primary topbottommargins "><img src={ beginning } alt="" /></button>
+                            <button type="button" onClick={() => this.handleOnSentenceChange('previousSentence')} className="btn btn-primary topbottommargins sidemargins"><img src={ arrow_left } alt="" /></button>
+                            <input type="text" value={(this.state.sentencePointer+1)+" / "+this.state.sentences.length} readOnly className="topbottommargins sidemargins counter" id="sentenceID" />
+                            <button type="button" onClick={() => this.handleOnSentenceChange('nextSentence')} className="btn btn-primary topbottommargins sidemargins"><img src={ arrow_right } alt="" /></button>
+                            <button type="button" onClick={() => this.handleOnSentenceChange('lastSentence')} className="btn btn-primary topbottommargins sidemargins"><img src={ end } alt="" /></button>
                         </div>
+                        <Button type="button" onClick={() => this.handleNewSentenceButton()}  variant="dark" className="btn btn-primary topbottommargins sidemargins">Add Sentence</Button>
                     </div>
                 </div>
             </div>
@@ -432,14 +429,16 @@ class SentenceView extends Component {
             </form>
             <div className="row">
                 <Button name="AddRow" onClick={() => this.handleAddRowButton()} variant="dark" className="sidemargins" >Add Row</Button>
-                <Button name="Save" onClick={() => this.handleSaveButton()} variant={this.state.saveButtonVariant}  className="sidemargins" >Save</Button>
-                <Button name="Discard" onClick={(e) => { if (window.confirm('Discard all unsaved changes?')) this.handleDiscardButton() }} variant="danger"  className="sidemargins" >Discard</Button>
+                <Button name="Save" onClick={() => this.handleSaveButton()} variant={this.state.saveButtonVariant}  className="sidemargins" >Save Sentence</Button>
+                <Button name="Discard" onClick={(e) => { if (window.confirm('Discard all unsaved changes?')) this.handleDiscardButton() }} variant="danger"  className="sidemargins" >Discard changes</Button>
             </div>    
             <div className="row paddingtop clickableimage">
                 <div className="imageButton" title={ this.state.playButtonTitle } alt="Play audio" onClick={this.handlePlayAudio.bind(this)}><img src={ this.state.audioIcon } alt="Play audio" /></div>
                 <input type="file" name="file" id="file" className="inputfile" ref={this.audioUploader}  onChange={(e) => this.handleFileUploader(e)} defaultValue={this.state.audioPath} />
                 <label htmlFor="file" className="topbottommargins audio">{this.state.setAudioFileTitle}</label>
                 <audio ref={this.audioControl}><source src={ this.state.audioFile} /></audio>
+                <Button type="button" onClick={() => this.handleExitButton()}  variant="success" className="btn btn-primary topbottommargins sidemargins rightalignbox">Exit Course</Button>
+
             </div>    
         </div>    
 

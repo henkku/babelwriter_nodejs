@@ -1,20 +1,53 @@
 const sqlite3 = require('sqlite3').verbose()
+const { response } = require('express')
 const express = require('express')
 const router = express.Router()
+const fs = require('fs')
 
+var db
 //var user
 
-let db = new sqlite3.Database("./estepais.db", (err) => {
-    if (err) {
-        console.log('Error when connecting to estepais.db', err)
-    } else {
-        console.log('Database connected!')
-    }
+router.get('/setdb/:selectedCourse', (req, res) => {
+  db = new sqlite3.Database("./"+req.params.selectedCourse, (err) => {
+      if (err) {
+          console.log('Error when connecting to course file: '+req.params.selectedCourse, err)
+          res.send('Error when connecting to course file: '+req.params.selectedCourse, err)
+      } else {
+          console.log('Database '+req.params.selectedCourse+ ' connected!')
+          res.send('Database '+req.params.selectedCourse+ ' connected!')
+        }
+  })
+
+
 })
 
 /* GET api listing. */
 router.get('/', (req, res) => {
     res.send('api works')
+})
+
+/* GET api listing. */
+router.get('/courselist', (req, res) => {
+  var courselist = []
+  fs.readdir('.', (err, files) => {
+    files.forEach(file => {
+//      console.log(file)
+      if(file.slice(file.lastIndexOf('.'))==".bkey"){
+ //       console.log(file)
+        courselist.push(file)
+      }
+    })
+    if(courselist.length>0){
+      courselist.forEach(course => {
+        console.log(course)
+      })
+      res.json(courselist)
+    } else{
+      res.send("No courses found!")
+    }
+  })
+
+
 })
 
 /* Get words for SentenceID. */
@@ -53,7 +86,7 @@ router.get('/sentences', (req, res) => {
 /* Get all chapters  */
 router.get('/chapters', (req, res) => {
   console.log('Route get all chapters')
-  var sql = "SELECT ID, chapterBegins,chapterEnds,Description FROM Chapters ORDER BY ID"
+  var sql = "SELECT ID, Name FROM Chapters ORDER BY ID"
   var params = []
   db.all(sql, params, (err, rows) => {
       if (err) {

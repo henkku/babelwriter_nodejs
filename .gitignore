@@ -8,6 +8,7 @@ babelwriterui-win32-ia32/
 # Databases (SQLite)
 *.db
 *.sqlite
+*.bkey
 
 # Logs
 logs

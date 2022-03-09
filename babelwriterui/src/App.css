@@ -78,7 +78,7 @@ div.applicationcontainer {
 }
 .bigbottommargin {
   margin-top: 5px;
-  margin-bottom: 120px;
+  margin-bottom: 40px;
 }
 
 .paddingtop{
@@ -90,8 +90,17 @@ div.applicationcontainer {
 }
 
 input.counter{
-  width: 65px;
+  width: 120px;
   text-align: center;
+}
+
+.centeralignbox{
+  margin: 0 auto;
+}
+
+.rightalignbox{
+  margin-left:  auto;
+  margin-right: 0;
 }
 
 label.audio{
