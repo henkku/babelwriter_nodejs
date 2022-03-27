@@ -6,7 +6,9 @@ import end from  "../assets/end.png";
 import '../App.css';
 import axios from 'axios';
 import Button from 'react-bootstrap/Button';
+import Modal from 'react-bootstrap/Modal';
 //import audioIcon from '../assets/icons8-ios-50.png';
+
 
 class SentenceView extends Component {
     constructor() {
@@ -14,9 +16,15 @@ class SentenceView extends Component {
         this.state = {
             words: [],
             sentences: [],
+            chapters: [],
             sentencePointer: 0,
             currentSentence: 1,
+            chapterPointer: 0,
             currentChapter: 1,
+            chapterName: "",
+            newChapterName: "",
+            newChapterID: 0,
+            editedChapterName: "",
             saveButtonVariant: "success",
             audioPath: "",
             audioIcon: "icons8-ios-50.png",
@@ -24,25 +32,46 @@ class SentenceView extends Component {
             setAudioFileTitle: "Set audio file...",
             audioUploadObject: null,
             audioChanged: false,
-            audioFile: null
+            audioFile: null,
+            showEditChapterDialog: false,
+            showNewChapterDialog: false,
+            chapterPersistPending: false
         }
         this.sentenceTable = React.createRef()
         this.audioControl = React.createRef();
         this.audioUploader = React.createRef();
     }
     componentDidMount = async () => {
-        axios.get('http://localhost:3001/sentences'
+        this.initEditor()
+    }
+    initEditor(){
+        axios.get('http://localhost:3001/sentences', { params: { chapterid: this.state.currentChapter }}
         ).then((response) => {
             const statefulData = response.data
             this.setState({sentences: statefulData})
             console.log("sentences: "+statefulData)
             this.setState((state) => ({currentSentence: statefulData[state.sentencePointer]}))
         }).catch((error) => {
-          console.log("Error occurred while fetching Entries")
+          console.log("Error occurred while fetching Sentences")
           console.error(error)
         })
+        
+        axios.get('http://localhost:3001/chapters', { params: {}}
+        ).then((response) => {
+            const statefulData = response.data
+            this.setState({chapters: statefulData})
+            console.log("chapters: "+JSON.stringify(statefulData))
+            this.setState((state) => ({
+                    currentChapter: statefulData[state.chapterPointer].ID,
+                    chapterName: statefulData[state.chapterPointer].Name                   
+                })
+            )
+        }).catch((error) => {
+          console.log("Error occurred while fetching Chapters")
+          console.error(error)
+        })
+        
         this.getCurrentSentence()
-    //    this.getCurrentAudio()
 
     }
     handleFormSubmit() {
@@ -102,7 +131,6 @@ class SentenceView extends Component {
     handleOnSentenceChange(controlName) {
         console.log("entering handleOnSentenceChange, controlName: "+controlName)
         if(this.state.saveButtonVariant === "warning"){
-        //    if (window.confirm('Save current changes?')) { this.handleSaveButton() }
             this.handleSaveButton()
         }
         switch(controlName){
@@ -141,6 +169,33 @@ class SentenceView extends Component {
                 console.log("entering DEFAULT handleOnSentenceChange, controlName: "+controlName)
         }
     }
+    handleOnChapterChange(controlName) {
+        console.log("entering handleOnChapterChange, controlName: "+controlName)
+        if(this.state.saveButtonVariant === "warning"){
+            this.handleSaveButton()
+        }
+        switch(controlName){
+            case "nextChapter":
+                if (this.state.chapterPointer < this.state.chapters.length-1){
+                    this.setState((state) => ({
+                        chapterPointer: state.chapterPointer+1,
+                        currentChapter: state.chapters[state.chapterPointer+1].ID
+                    }),  this.initEditor)    
+                }
+            break
+            case "previousChapter":
+                if (this.state.chapterPointer > 0){
+                    this.setState((state) => ({
+                        chapterPointer: state.chapterPointer-1,
+                        currentChapter: state.chapters[state.chapterPointer-1].ID
+                    }),  this.initEditor)
+                }
+
+            break
+            default:
+                console.log("entering DEFAULT handleOnChapterChange, controlName: "+controlName)
+            }
+        }
     handleAddRowButton(){
         console.log("Entering handleAddRowButton")
         this.setState(previousState => ({
@@ -152,6 +207,14 @@ class SentenceView extends Component {
         }))
 
     }
+
+// STATE CODES FOR ROW ELEMENT
+// State=0 - Initial State (Row persisted)
+// State=1 - Updated (Waiting to be persisted)
+// State=2 - Deleted Row (Waiting to be persisted)
+// State=3 - New Row (Row discarded when Save)
+// State=4 - Updated New Row (Waiting to be persisted)
+
     handleSaveButton(){
         console.log("Entering handleSaveButton")
         sequentialUpdateDB(this)
@@ -161,6 +224,7 @@ class SentenceView extends Component {
             var audioFileChanged = context.state.audioChanged
             var currentSentence = context.state.currentSentence
             var audioUploadObject = context.state.audioUploadObject
+            var currentChapter = context.state.currentChapter
             const promises = []
             var axiosPromiseIndex = 0
             var updatedItemIndex = []
@@ -172,7 +236,8 @@ class SentenceView extends Component {
                             SentenceID: item.SentenceID,
                             RowPosition: item.RowPosition,
                             Column1: item.Column1,
-                            Column2: item.Column2
+                            Column2: item.Column2,
+                            ChapterID: currentChapter
                         }
                         if(item.State === 1){
                             promises[axiosPromiseIndex] = axios.post('http://localhost:3001/updaterow', { row })
@@ -194,7 +259,9 @@ class SentenceView extends Component {
                     console.log("post audioFile")
                     var formData = new FormData();
                     formData.append('AudioFile', audioUploadObject);
-                    promises[axiosPromiseIndex] = axios.post('http://localhost:3001/saveaudio/'+currentSentence, formData)    
+                    formData.append('SentenceID', currentSentence);
+                    formData.append('ChapterID', currentChapter);
+                    promises[axiosPromiseIndex] = axios.post('http://localhost:3001/saveaudio', formData)    
                 }
                 await Promise.all(promises)
                 .then(
@@ -265,23 +332,29 @@ class SentenceView extends Component {
     }
     handleNewSentenceButton(){
         console.log("entering getCurrenthandleNewSentenceButtonSentence")
+        var newSentenceID =1  // if new sentence is added to new chapter
+        var sentencePointer =0 // if new sentence is added to new chapter
         if(this.state.saveButtonVariant === "warning"){
-   //         if (window.confirm('Save current changes?')) { this.handleSaveButton() }
             this.handleSaveButton()
         }
+        if(this.state.sentences.length>0){  // if new sentence is added to existing chapter
+            newSentenceID = this.state.sentences[this.state.sentences.length - 1]+1
+            sentencePointer = this.state.sentences.length
+        }
+        console.log("adding new sentence with sentenceID: "+newSentenceID+" and sentencePointer: "+sentencePointer)
         var newSentence = []
-        for(var i=0; i<4; i++){
+         for(var i=0; i<4; i++){
             newSentence.push({Column1: "",
             Column2: "",
             RowPosition: i+1,
-            SentenceID: this.state.sentences[this.state.sentences.length - 1]+1,
+            SentenceID: newSentenceID,
             State: 3})     
         }
         
         this.setState(previousState => ({
-            sentences: [...previousState.sentences, previousState.sentences[previousState.sentences.length - 1]+1],
-            currentSentence: previousState.sentences[previousState.sentences.length - 1]+1,
-            sentencePointer: previousState.sentences.length,
+            sentences: [...previousState.sentences, newSentenceID],
+            currentSentence: newSentenceID,
+            sentencePointer: sentencePointer,
             words: newSentence,
             audioUploadObject: null,
             audioFile: null,
@@ -317,8 +390,8 @@ class SentenceView extends Component {
         console.log("entering handleExitButton")        
     }
     getCurrentSentence(){
-        console.log("entering getCurrentSentence with id: "+this.state.currentSentence)
-        axios.get('http://localhost:3001/words/'+this.state.currentSentence
+        console.log("entering getCurrentSentence with id: "+this.state.currentSentence+" and chapterId: "+this.state.currentChapter)
+        axios.get('http://localhost:3001/words', { params: { wordid: this.state.currentSentence, chapterid: this.state.currentChapter }}
         ).then((response) => {
            const statefulData = response.data.map(obj=> ({...obj, State: 0, RemoveButtonVariant: "danger"}))
             this.setState((previousState) => ({ 
@@ -335,9 +408,10 @@ class SentenceView extends Component {
         this.getCurrentAudio()  
     }
     getCurrentAudio(){
-        axios.get('http://localhost:3001/audio/'+this.state.currentSentence, {
-            responseType: 'blob'
-            , headers: {'Content-Type': 'audio/mp3'}
+        axios.get('http://localhost:3001/audio', {
+            params: { wordid: this.state.currentSentence, chapterid: this.state.currentChapter },    
+            responseType: 'blob', 
+            headers: {'Content-Type': 'audio/mp3'}
           }
         ).then((response) => {
             console.log("setting audio with response.status: "+response.status)
@@ -363,25 +437,107 @@ class SentenceView extends Component {
             }
         })
     }
-// State 0 - Initial State (Row persisted)
-// State 1 - Updated (Row persisted)
-// State 2 - Deleted Row (Row persisted)
-// State 3 - New Row
-// State 4 - Updated New Row
+    toggleEditChapterDialog() {
+        console.log('Entering toggleEditChapterDialog()');
+        this.setState({ showEditChapterDialog: !this.state.showEditChapterDialog})
+    }
+    submitChapterEdit(){
+        console.log('Entering handleEditChapter() editedChapterName: '+this.state.editedChapterName+' currentChapter: '+this.state.chapters[this.state.chapterPointer].ID);
+
+        axios.post('http://localhost:3001/updatechaptername', { newChapterName: this.state.editedChapterName, ChapterID: this.state.chapters[this.state.chapterPointer].ID })
+        .then((response) => {
+            console.log("chapters: "+JSON.stringify(response.data))
+            this.setState({ 
+                showEditChapterDialog: false,
+                chapterName: this.state.editedChapterName
+            })
+        }).catch((error) => {
+          console.log("Error occurred while persisting new chapter name")
+          console.error(error)
+        })
+
+    }
+    handleOnEditChapterNameChange(e){
+        console.log('Entering handleOnEditChapterNameChange() editedChapterName: '+e.target.value);
+        this.setState({ editedChapterName: e.target.value})
+
+    }
+    toggleNewChapterDialog(){
+        console.log('Entering toggleNewChapterDialog()');
+        this.setState({ editedChapterName: ""})
+        this.setState({ showNewChapterDialog: !this.state.showNewChapterDialog})
+    }
+    handleOnNewChapterNameChange(e){
+        console.log('Entering handleOnNewChapterNameChange() newChapterName: '+e.target.value);
+        this.setState({ newChapterName: e.target.value})
+    }
+    submitNewChapter(){
+        console.log('Entering submitNewChapter()');
+        var newChapterID = this.state.chapters[this.state.chapters.length-1].ID + 1
+        console.log('DEBUG newChapterID: '+ newChapterID);
+        console.log('DEBUG newChapterName: '+ this.state.newChapterName);
+
+        axios.post('http://localhost:3001/insertnewchapter', { newChapterName: this.state.newChapterName, newChapterID: newChapterID })
+        .then((response) => {
+            console.log("chapters: "+JSON.stringify(response.data))
+            this.setState(previousState => ({
+                chapterName: previousState.newChapterName,
+                chapters: [...previousState.chapters, {ID: newChapterID, Name: previousState.newChapterName}],
+                newChapterName: "",
+                currentChapter: newChapterID,
+                sentences: [],
+                words: [],
+                sentencePointer: 0,
+                chapterPointer: previousState.chapters.length
+            }))
+            // Create and save an empty sentence into the new chapter
+            this.createPlaceholderSentence()
+            this.handleSaveButton()
+        }).catch((error) => {
+          console.log("Error occurred while inserting new chapter")
+          console.error(error)
+        })
+        this.setState({ showNewChapterDialog: false })
+
+    }
+    createPlaceholderSentence(){
+        // A new chapter always needs to have at least an empty sentence in DB to prevent exception when navigating chapters 
+        var newSentenceID =1  
+        var newSentence = []
+         for(var i=0; i<4; i++){
+            newSentence.push({Column1: "",
+            Column2: "",
+            RowPosition: i+1,
+            SentenceID: newSentenceID,
+            State: 4})     
+        }        
+        this.setState(previousState => ({
+            sentences: [...previousState.sentences, newSentenceID],
+            currentSentence: newSentenceID,
+            words: newSentence,
+            audioUploadObject: null,
+            audioFile: null,
+            audioChanged: false,
+            audioIcon: "icons8-ios-50.png",
+            setAudioFileTitle: "Set audio file...",
+            saveButtonVariant: "warning"
+        }))
+
+    }
     render() {
         return (
         <div className="applicationcontainer">
-            <div className="chapternavigatorcolor">
-                
+            <div className="chapternavigatorcolor">           
                 <div>
                     <div className="row bigbottommargin">
                         <h2>Chapter</h2>
                         <div className="centeralignbox">
-                            <button type="button" onClick={() => this.handleOnSentenceChange('previousSentence')} className="btn btn-primary topbottommargins bigmarginleft"><img src={ arrow_left } alt="" /></button>
-                            <input type="text" value={(this.state.sentencePointer+1)+" / "+this.state.sentences.length} readOnly className="topbottommargins sidemargins counter" id="sentenceID" />
-                            <button type="button" onClick={() => this.handleOnSentenceChange('nextSentence')} className="btn btn-primary topbottommargins sidemargins"><img src={ arrow_right } alt="" /></button>
+                            <button type="button" onClick={() => this.handleOnChapterChange('previousChapter')} className="btn btn-primary topbottommargins"><img src={ arrow_left } alt="" /></button>
+                            <span className="sidemargins"> {(this.state.chapterPointer+1)+" / "+this.state.chapters.length+" - "+this.state.chapterName}</span>
+                            <button type="button" onClick={() => this.handleOnChapterChange('nextChapter')} className="btn btn-primary topbottommargins "><img src={ arrow_right } alt="" /></button>
                         </div>
-                        <Button type="button" onClick={() => this.handleNewSentenceButton()}  variant="dark" className="btn btn-primary topbottommargins bigmarginleft">New Chapter</Button>
+                        <Button type="button" onClick={() => this.toggleEditChapterDialog()}  variant="success" className="btn btn-primary topbottommargins sidemargins ">Edit Chapter</Button>
+                        <Button type="button" onClick={() => this.toggleNewChapterDialog()}  variant="dark" className="btn btn-primary topbottommargins ">New Chapter</Button>
                     </div>
                 </div>
             </div>
@@ -419,7 +575,6 @@ class SentenceView extends Component {
                         <td><input name="RowPosition" className="counter" defaultValue={currentWord.RowPosition} /></td>
                         <td><input name="OriginalText" className="originaltext" onChange={(e) => this.handleOnWordChange(index, e)} value={currentWord.Column1} /></td>
                         <td><input name="TranslatedText" className="translatedtext" onChange={(e) => this.handleOnWordChange(index, e)} value={currentWord.Column2} /></td>
-                        <td><input name="State" className="counter" readOnly defaultValue={currentWord.State} /></td>
                         <td><Button name="RemoveButton" onClick={(e) => this.handleRemoveRowButton(index, e) } variant={currentWord.RemoveButtonVariant} >Remove</Button></td>
                     </tr>
                     )}
@@ -439,12 +594,49 @@ class SentenceView extends Component {
                 <audio ref={this.audioControl}><source src={ this.state.audioFile} /></audio>
                 <Button type="button" onClick={() => this.handleExitButton()}  variant="success" className="btn btn-primary topbottommargins sidemargins rightalignbox">Exit Course</Button>
 
-            </div>    
+            </div>
+            <Modal show={this.state.showEditChapterDialog}>
+                    <Modal.Header closeButton onClick={() => this.toggleEditChapterDialog()}>
+                    <Modal.Title>Enter new name for chapter..</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <form onSubmit={this.handleFormSubmit}>
+                            <input name="newChapterName" className="originalText" onChange={(e) => this.handleOnEditChapterNameChange(e)} defaultValue={this.state.chapterName} />
+                        </form>
+                    </Modal.Body>
+                    <Modal.Footer>
+                    <Button variant="secondary" onClick={() => this.toggleEditChapterDialog()}>
+                        Close
+                    </Button>
+                    <Button variant="primary" onClick={() => this.submitChapterEdit()}>
+                        Save Changes
+                    </Button>
+                    </Modal.Footer>
+            </Modal>   
+            <Modal show={this.state.showNewChapterDialog}>
+                    <Modal.Header closeButton onClick={() => this.toggleNewChapterDialog()}>
+                    <Modal.Title>Enter name for new chapter..</Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body>
+                        <form onSubmit={this.handleFormSubmit}>
+                            <input name="newChapterName" className="originalText" onChange={(e) => this.handleOnNewChapterNameChange(e)} defaultValue={this.state.newChapterName} />
+                        </form>
+                    </Modal.Body>
+                    <Modal.Footer>
+                    <Button variant="secondary" onClick={() => this.toggleNewChapterDialog()}>
+                        Close
+                    </Button>
+                    <Button variant="primary" onClick={() => this.submitNewChapter()}>
+                        Save Changes
+                    </Button>
+                    </Modal.Footer>
+            </Modal>   
         </div>    
 
 
         )
     }
+
 }
 
 export default SentenceView;

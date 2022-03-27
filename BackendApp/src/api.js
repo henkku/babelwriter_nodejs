@@ -51,10 +51,10 @@ router.get('/courselist', (req, res) => {
 })
 
 /* Get words for SentenceID. */
-router.get('/words/:id', (req, res, next) => {
+router.get('/words', (req, res, next) => {
   console.log('Route get words for SentenceID')
-  var sql = "SELECT  RowPosition, SentenceID, Column1, Column2 FROM Words WHERE SentenceID=? ORDER BY RowPosition"
-  var params = [req.params.id]
+  var sql = "SELECT  RowPosition, SentenceID, Column1, Column2 FROM Words WHERE SentenceID=? AND Chapter=? ORDER BY RowPosition"
+  var params = [req.query.wordid, req.query.chapterid]
   db.all(sql, params, (err, rows) => {
       if (err) {
         res.status(400).json({"error":err.message})
@@ -66,9 +66,9 @@ router.get('/words/:id', (req, res, next) => {
 
 /* Get all sentences  */
 router.get('/sentences', (req, res) => {
-  console.log('Route get all sentences')
-  var sql = "SELECT SentenceID FROM Words GROUP BY SentenceID ORDER BY SentenceID"
-  var params = []
+  console.log('Route get all sentences with ChapterId: '+req.query.chapterid)
+  var sql = "SELECT SentenceID FROM Words WHERE Chapter=? GROUP BY SentenceID ORDER BY SentenceID"
+  var params = [req.query.chapterid]
   db.all(sql, params, (err, rows) => {
       if (err) {
         res.status(400).json({"error":err.message})
@@ -97,41 +97,54 @@ router.get('/chapters', (req, res) => {
     })
 })
 
+/* Update Chapter */
+router.post('/updatechaptername', (req, res) =>{
+  console.log('Entering Update Chapter Name - newName: '+req.body.newChapterName+' ChapterID: '+req.body.ChapterID);
+  var params = [req.body.newChapterName, req.body.ChapterID];
+  db.run("UPDATE Chapters SET Name = ? WHERE ID = ?", params);
+  res.json({ "message":"success" })
+})
+
+/* Insert New Chapter */
+router.post('/insertnewchapter', (req, res) =>{
+  console.log('Entering Insert New Chapter - ChapterID: '+req.body.newChapterID+' Name: '+req.body.newChapterName)
+  var params = [req.body.newChapterID, req.body.newChapterName];
+  db.run("INSERT INTO Chapters (ID, Name) VALUES(?, ?) ", params);
+  res.json({ "message":"success" })
+})
+
 /* Update Row */
 router.post('/updaterow', (req, res) =>{
-  console.log('Entering Update Row - SentenceID: '+req.body.row.SentenceID+' RowPosition: '+req.body.row.RowPosition+' Column1: '+req.body.row.Column1+' Column2: '+req.body.row.Column2);
-  var params = [req.body.row.Column1, req.body.row.Column2, req.body.row.SentenceID, req.body.row.RowPosition];
-  db.run("UPDATE Words SET Column1 = ?, Column2 = ? WHERE SentenceID = ? AND RowPosition = ?", params);
-  res.json({
-      "message":"success"
-  })
+  console.log('Entering Update Row - SentenceID: '+req.body.row.SentenceID+' RowPosition: '+req.body.row.RowPosition
+      +' Column1: '+req.body.row.Column1+' Column2: '+req.body.row.Column2+' ChapterID: '+req.body.row.ChapterID);
+  var params = [req.body.row.Column1, req.body.row.Column2, req.body.row.SentenceID, req.body.row.RowPosition, req.body.row.ChapterID];
+  db.run("UPDATE Words SET Column1 = ?, Column2 = ? WHERE SentenceID = ? AND RowPosition = ? AND Chapter = ?", params);
+  res.json({ "message":"success" })
 })
 
 /* Insert Row */
 router.post('/insertrow', (req, res) =>{
-  console.log('Entering Insert Row - SentenceID: '+req.body.row.SentenceID+' RowPosition: '+req.body.row.RowPosition+' Column1: '+req.body.row.Column1+' Column2: '+req.body.row.Column2);
-  var params = [req.body.row.SentenceID, req.body.row.RowPosition, req.body.row.Column1, req.body.row.Column2];
-  db.run("INSERT INTO Words (ID, SentenceID, RowPosition, Column1, Column2) VALUES ((SELECT max(ID) from words)+1, ?, ?, ?, ?) ", params);
-  res.json({
-    "message":"success"
-  })
+  console.log('Entering Insert Row - SentenceID: '+req.body.row.SentenceID+' RowPosition: '+req.body.row.RowPosition
+    +' Column1: '+req.body.row.Column1+' Column2: '+req.body.row.Column2+' ChapterID: '+req.body.row.ChapterID);
+  var params = [req.body.row.SentenceID, req.body.row.RowPosition, req.body.row.Column1, req.body.row.Column2, req.body.row.ChapterID];
+  db.run("INSERT INTO Words (ID, SentenceID, RowPosition, Column1, Column2, Chapter) VALUES ((SELECT max(ID) from words)+1, ?, ?, ?, ?, ?) ", params);
+  res.json({ "message":"success" })
 })
 
 /* Delete Row */
 router.post('/deleterow', (req, res) =>{
-  console.log('Entering Delete Row - SentenceID: '+req.body.row.SentenceID+' RowPosition: '+req.body.row.RowPosition+' Column1: '+req.body.row.Column1+' Column2: '+req.body.row.Column2);
-  var params = [req.body.row.SentenceID, req.body.row.RowPosition]
-  db.run("DELETE FROM Words WHERE SentenceID = ? AND RowPosition = ?", params)
-  res.json({
-      "message":"success"
-  })
+  console.log('Entering Delete Row - SentenceID: '+req.body.row.SentenceID+' RowPosition: '+req.body.row.RowPosition
+    +' Column1: '+req.body.row.Column1+' Column2: '+req.body.row.Column2+' ChapterID: '+req.body.row.ChapterID);
+  var params = [req.body.row.SentenceID, req.body.row.RowPosition, req.body.row.ChapterID]
+  db.run("DELETE FROM Words WHERE SentenceID = ? AND RowPosition = ? AND Chapter = ?", params)
+  res.json({ "message":"success" })
 })
 
 
-router.get('/audio/:id', (req, res) => {
-  console.log('Route get audio with SentenceId: '+req.params.id)
-  var sql = "SELECT Audio FROM Blobs WHERE SentenceID = ?"
-  var params = [req.params.id]
+router.get('/audio', (req, res) => {
+  console.log('Route get audio with SentenceId: '+req.query.wordid+' and ChapterId: '+req.query.chapterid)
+  var sql = "SELECT Audio FROM Blobs WHERE SentenceID=? AND ChapterID=?"
+  var params = [req.query.wordid, req.query.chapterid]
 
     db.get(sql, params, (err, blob) => {
       if (err) {
@@ -141,33 +154,31 @@ router.get('/audio/:id', (req, res) => {
         res.contentType('audio/mp3')
         res.end(Buffer.from(blob.Audio, 'binary'))
       } else{
-        res.status(404).send('audio not found')
+        res.status(200).send('audio not found')
       }
     })
 
 })
 
 /* Delete Row */
-router.post('/saveaudio/:id', (req, res) =>{
-  console.log('Entering Save Audio with SentenceID: '+req.params.id);
+router.post('/saveaudio', (req, res) =>{
+  console.log('Entering Save Audio with SentenceId: '+req.body.SentenceID+' and ChapterId: '+req.body.ChapterID);
   var buffer= req.files.AudioFile.data
-    db.get("SELECT count(*) AS 'count' FROM Blobs WHERE SentenceID = ?", [req.params.id], (err, row) => {
+    db.get("SELECT count(*) AS 'count' FROM Blobs  WHERE SentenceID=? AND ChapterID=?", [req.body.SentenceID, req.body.ChapterID], (err, row) => {
         console.log(row)
         if (err) {
           res.status(400).json({"error":err.message})
         }
         if(row.count>0){
           console.log("count > 0, SentenceID found")
-          db.run("UPDATE Blobs SET Audio = ? WHERE SentenceID = ?", [buffer, req.params.id]);
+          db.run("UPDATE Blobs SET Audio = ? WHERE SentenceID = ? AND ChapterID=?", [buffer, req.body.SentenceID, req.body.ChapterID]);
         } else {
           console.log("count = 0, SentenceID not found")
-          db.run("INSERT INTO Blobs (SentenceID, Audio) VALUES (?, ?) ", [req.params.id, buffer])
+          db.run("INSERT INTO Blobs (SentenceID, ChapterID, Audio) VALUES (?, ?, ?) ", [req.body.SentenceID, req.body.ChapterID, buffer])
         }
     })
-  res.json({
-    "message":"success"
+    res.json({ "message":"success" })
   })
-})
 
 
 module.exports = router
