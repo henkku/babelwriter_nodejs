@@ -44,6 +44,10 @@ class HomeView extends Component {
     render() {
         return(
             <div>
+                <div>
+                    <td><Button name="refreshCourses" onClick={(e) => this.handleGetCourseList() } variant="primary" >Refresh Courses..</Button></td>
+
+                </div>
                 <div></div>
                 <div style={{ margin: 25, padding: 10 }}><h1>Select course file..</h1></div>
                 <div style={{ margin: 20, padding: 10 }}>

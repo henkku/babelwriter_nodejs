@@ -4,6 +4,7 @@
 
 # packaged executable folder
 babelwriterui-win32-ia32/
+build/
 
 # Databases (SQLite)
 *.db
